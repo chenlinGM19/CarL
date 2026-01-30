@@ -1,0 +1,385 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@color/dark_grey">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="@string/control_panel"
+                android:textColor="@color/white"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btnPermissionNotification"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:text="Media Access"
+                android:textSize="10sp"
+                android:backgroundTint="#444444"
+                android:insetTop="0dp"
+                android:insetBottom="0dp" />
+        </LinearLayout>
+
+        <!-- Section 1: Core Controls -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/card_bg"
+            app:cardCornerRadius="16dp"
+            app:strokeColor="#333"
+            app:strokeWidth="1dp"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:text="@string/cat_core"
+                    android:textColor="@color/teal_200"
+                    android:textStyle="bold"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchOverlay"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="@string/toggle_overlay"
+                        android:textColor="@color/white"/>
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchLock"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="@string/lock_position"
+                        android:textColor="@color/white"/>
+                </LinearLayout>
+                
+                <TextView
+                    android:id="@+id/tvStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/status_unlocked"
+                    android:textSize="10sp"
+                    android:textColor="#888"
+                    android:gravity="end"
+                    android:layout_marginTop="-8dp"/>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Section 2: Typography & Style -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/card_bg"
+            app:cardCornerRadius="16dp"
+            app:strokeColor="#333"
+            app:strokeWidth="1dp"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:text="@string/cat_typography"
+                    android:textColor="@color/teal_200"
+                    android:textStyle="bold"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"/>
+
+                <!-- Font Family & Alignment Row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
+
+                    <com.google.android.material.button.MaterialButtonToggleGroup
+                        android:id="@+id/toggleGroupFont"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:singleSelection="true"
+                        app:selectionRequired="true"
+                        android:layout_marginEnd="8dp">
+                        <Button android:id="@+id/btnFontDef" android:text="@string/font_default" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="wrap_content" android:layout_height="40dp" android:textSize="10sp"/>
+                        <Button android:id="@+id/btnFontMono" android:text="@string/font_mono" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="wrap_content" android:layout_height="40dp" android:textSize="10sp"/>
+                        <Button android:id="@+id/btnFontSerif" android:text="@string/font_serif" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="wrap_content" android:layout_height="40dp" android:textSize="10sp"/>
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                    <Space android:layout_width="0dp" android:layout_weight="1" android:layout_height="1dp"/>
+
+                    <com.google.android.material.button.MaterialButtonToggleGroup
+                        android:id="@+id/toggleGroupAlign"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:singleSelection="true"
+                        app:selectionRequired="true">
+                        <Button android:id="@+id/btnAlignLeft" android:text="L" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="40dp" android:layout_height="40dp"/>
+                        <Button android:id="@+id/btnAlignCenter" android:text="C" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="40dp" android:layout_height="40dp"/>
+                        <Button android:id="@+id/btnAlignRight" android:text="R" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="40dp" android:layout_height="40dp"/>
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
+                </LinearLayout>
+
+                <!-- Bold/Italic & Size -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+                    
+                    <com.google.android.material.button.MaterialButtonToggleGroup
+                        android:id="@+id/toggleGroupStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:selectionRequired="false"
+                        app:singleSelection="false">
+                        <Button android:id="@+id/btnStyleBold" android:text="@string/style_bold" android:textStyle="bold" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="48dp" android:layout_height="40dp"/>
+                        <Button android:id="@+id/btnStyleItalic" android:text="@string/style_italic" android:textStyle="italic" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="48dp" android:layout_height="40dp"/>
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                    <TextView
+                        android:text="Size"
+                        android:textColor="#AAA"
+                        android:textSize="12sp"
+                        android:layout_marginStart="16dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/sliderSize"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:valueFrom="12"
+                        android:valueTo="64"
+                        android:value="20" />
+                </LinearLayout>
+
+                <!-- Color Palette -->
+                <TextView
+                    android:text="Text Color"
+                    android:textSize="12sp"
+                    android:textColor="#AAA"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="4dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:scrollbars="none">
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        
+                        <Button android:id="@+id/btnColorWhite" android:layout_width="40dp" android:layout_height="40dp" android:backgroundTint="@color/white" android:layout_marginEnd="8dp"/>
+                        <Button android:id="@+id/btnColorCyan" android:layout_width="40dp" android:layout_height="40dp" android:backgroundTint="@color/accent_cyan" android:layout_marginEnd="8dp"/>
+                        <Button android:id="@+id/btnColorGreen" android:layout_width="40dp" android:layout_height="40dp" android:backgroundTint="@color/accent_green" android:layout_marginEnd="8dp"/>
+                        <Button android:id="@+id/btnColorYellow" android:layout_width="40dp" android:layout_height="40dp" android:backgroundTint="@color/accent_yellow" android:layout_marginEnd="8dp"/>
+                        <Button android:id="@+id/btnColorOrange" android:layout_width="40dp" android:layout_height="40dp" android:backgroundTint="@color/accent_orange" android:layout_marginEnd="8dp"/>
+                        <Button android:id="@+id/btnColorPink" android:layout_width="40dp" android:layout_height="40dp" android:backgroundTint="@color/accent_pink" android:layout_marginEnd="8dp"/>
+                        <Button android:id="@+id/btnColorRed" android:layout_width="40dp" android:layout_height="40dp" android:backgroundTint="@color/accent_red" android:layout_marginEnd="8dp"/>
+                    </LinearLayout>
+                </HorizontalScrollView>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Section 3: Appearance & Opacity -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/card_bg"
+            app:cardCornerRadius="16dp"
+            app:strokeColor="#333"
+            app:strokeWidth="1dp"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:text="@string/cat_appearance"
+                    android:textColor="@color/teal_200"
+                    android:textStyle="bold"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="4dp"/>
+
+                <!-- Style Presets Quick Select -->
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:scrollbars="none"
+                    android:layout_marginBottom="12dp">
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <Button android:id="@+id/btnStyleClassic" android:text="Classic" style="@style/Widget.MaterialComponents.Button.TextButton" android:textSize="12sp"/>
+                        <Button android:id="@+id/btnStyleMinimal" android:text="Minimal" style="@style/Widget.MaterialComponents.Button.TextButton" android:textSize="12sp"/>
+                        <Button android:id="@+id/btnStyleNeon" android:text="Neon" style="@style/Widget.MaterialComponents.Button.TextButton" android:textSize="12sp"/>
+                        <Button android:id="@+id/btnStyleRetro" android:text="Retro" style="@style/Widget.MaterialComponents.Button.TextButton" android:textSize="12sp"/>
+                        <Button android:id="@+id/btnStyleDay" android:text="Day" style="@style/Widget.MaterialComponents.Button.TextButton" android:textSize="12sp"/>
+                        <Button android:id="@+id/btnStyleKaraoke" android:text="KTV" style="@style/Widget.MaterialComponents.Button.TextButton" android:textSize="12sp"/>
+                    </LinearLayout>
+                </HorizontalScrollView>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <TextView android:text="@string/label_text_alpha" android:textColor="#AAA" android:textSize="10sp" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+                    <TextView android:text="@string/label_bg_alpha" android:textColor="#AAA" android:textSize="10sp" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <com.google.android.material.slider.Slider android:id="@+id/sliderTextAlpha" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:valueFrom="0.1" android:valueTo="1.0" android:value="1.0" />
+                    <com.google.android.material.slider.Slider android:id="@+id/sliderBgAlpha" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:valueFrom="0.0" android:valueTo="1.0" android:value="0.6" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Section 4: Layout & Position -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/card_bg"
+            app:cardCornerRadius="16dp"
+            app:strokeColor="#333"
+            app:strokeWidth="1dp"
+            android:layout_marginBottom="24dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+                    
+                    <TextView
+                        android:text="@string/cat_layout"
+                        android:textColor="@color/teal_200"
+                        android:textStyle="bold"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"/>
+                    
+                    <Button
+                        android:id="@+id/btnResetPos"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:text="Reset Pos"
+                        android:textSize="10sp"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"/>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+                    
+                    <TextView
+                        android:text="@string/label_padding"
+                        android:textColor="#AAA"
+                        android:textSize="12sp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="12dp"/>
+                    
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/sliderPadding"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:valueFrom="0"
+                        android:valueTo="40"
+                        android:stepSize="1"
+                        android:value="12" />
+                </LinearLayout>
+
+                <!-- D-Pad for Fine Tuning -->
+                <TextView
+                    android:text="@string/fine_tune_pos"
+                    android:textColor="#AAA"
+                    android:textSize="12sp"
+                    android:layout_marginTop="8dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:layout_marginTop="4dp">
+
+                    <Button android:id="@+id/btnMoveLeft" android:text="←" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="50dp" android:layout_height="40dp" android:layout_marginEnd="8dp"/>
+                    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical">
+                        <Button android:id="@+id/btnMoveUp" android:text="↑" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="50dp" android:layout_height="40dp" android:layout_marginBottom="4dp"/>
+                        <Button android:id="@+id/btnMoveDown" android:text="↓" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="50dp" android:layout_height="40dp"/>
+                    </LinearLayout>
+                    <Button android:id="@+id/btnMoveRight" android:text="→" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="50dp" android:layout_height="40dp" android:layout_marginStart="8dp"/>
+                </LinearLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+</ScrollView>

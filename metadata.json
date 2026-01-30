@@ -1,0 +1,5 @@
+{
+  "name": "CarLyricsOverlay",
+  "description": "Native Android app for car head units (Android 9+) providing a floating, draggable, and locking lyrics overlay.",
+  "requestFramePermissions": []
+}
