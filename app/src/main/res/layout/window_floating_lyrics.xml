@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root_layout"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_rounded_overlay"
+    android:padding="12dp">
+
+    <ImageView
+        android:id="@+id/ivDragHandle"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:src="@android:drawable/ic_menu_move"
+        android:layout_gravity="center_horizontal"
+        android:tint="#88FFFFFF"
+        android:contentDescription="Drag Handle" />
+
+    <TextView
+        android:id="@+id/tvLyrics"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="@string/sample_lyrics"
+        android:textColor="@color/accent_cyan"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:minWidth="200dp"
+        android:shadowColor="#000000"
+        android:shadowDx="2"
+        android:shadowDy="2"
+        android:shadowRadius="4" />
+
+</LinearLayout>
