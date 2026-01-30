@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace 'com.example.caroverlay'
+    namespace 'com.nldc.carlyrics'
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.example.caroverlay"
+        applicationId "com.nldc.carlyrics"
         minSdk 28
         targetSdk 33
         versionCode 1

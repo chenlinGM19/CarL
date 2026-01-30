@@ -11,5 +11,10 @@
     <color name="accent_green">#00E676</color>
     <color name="accent_cyan">#00BCD4</color>
     <color name="accent_yellow">#FFEB3B</color>
-    <color name="dark_grey">#212121</color>
+    <color name="accent_red">#FF5252</color>
+    <color name="accent_orange">#FF9800</color>
+    <color name="accent_pink">#E91E63</color>
+    <color name="dark_grey">#121212</color>
+    <color name="card_bg">#1E1E1E</color>
+    <color name="control_bg">#2C2C2C</color>
 </resources>
