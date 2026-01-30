@@ -19,6 +19,7 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.util.Log;
 
 public class FloatingLyricsService extends Service {
 
@@ -46,7 +47,7 @@ public class FloatingLyricsService extends Service {
     public static final String EXTRA_VALUE = "extra_value"; 
     public static final String EXTRA_TEXT = "extra_text";
     public static final String EXTRA_STRING_VAL = "extra_string_val";
-    public static final String EXTRA_INT_VAL = "extra_int_val"; // For color or alignment int
+    public static final String EXTRA_INT_VAL = "extra_int_val";
     public static final String EXTRA_BOOL_BOLD = "extra_bool_bold";
     public static final String EXTRA_BOOL_ITALIC = "extra_bool_italic";
     public static final String EXTRA_DX = "extra_dx";
@@ -103,53 +104,55 @@ public class FloatingLyricsService extends Service {
                 manager.createNotificationChannel(channel);
             }
 
-            Notification notification = new Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
+            Notification.Builder builder = new Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
                     .setContentTitle("Car Lyrics Overlay")
-                    .setContentText("Service is running")
-                    .setSmallIcon(R.drawable.ic_app_icon)
-                    .build();
+                    .setContentText("Lyrics service is active")
+                    .setSmallIcon(R.drawable.ic_app_icon);
 
-            startForeground(1, notification);
+            startForeground(1, builder.build());
         }
     }
 
     private void initializeWindow() {
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
-        floatingView = LayoutInflater.from(this).inflate(R.layout.window_floating_lyrics, null);
-        rootLayout = floatingView.findViewById(R.id.root_layout);
-        tvLyrics = floatingView.findViewById(R.id.tvLyrics);
-        ivDragHandle = floatingView.findViewById(R.id.ivDragHandle);
-
-        int layoutFlag;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            layoutFlag = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
-        } else {
-            layoutFlag = WindowManager.LayoutParams.TYPE_PHONE;
-        }
-
-        params = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                layoutFlag,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | 
-                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | 
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-                PixelFormat.TRANSLUCENT);
-
-        params.gravity = Gravity.TOP | Gravity.START;
-        params.x = 100;
-        params.y = 100;
-
         try {
+            floatingView = LayoutInflater.from(this).inflate(R.layout.window_floating_lyrics, null);
+            rootLayout = floatingView.findViewById(R.id.root_layout);
+            tvLyrics = floatingView.findViewById(R.id.tvLyrics);
+            ivDragHandle = floatingView.findViewById(R.id.ivDragHandle);
+
+            int layoutFlag;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                layoutFlag = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+            } else {
+                layoutFlag = WindowManager.LayoutParams.TYPE_PHONE;
+            }
+
+            params = new WindowManager.LayoutParams(
+                    WindowManager.LayoutParams.WRAP_CONTENT,
+                    WindowManager.LayoutParams.WRAP_CONTENT,
+                    layoutFlag,
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | 
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | 
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                    PixelFormat.TRANSLUCENT);
+
+            params.gravity = Gravity.TOP | Gravity.START;
+            params.x = 100;
+            params.y = 100;
+
             windowManager.addView(floatingView, params);
+            setupTouchListener();
+            
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e("CarLyrics", "Failed to initialize window", e);
+            // If window cannot be added, we might not have permission, but service should stay alive
         }
-        
-        setupTouchListener();
     }
 
     private void setupTouchListener() {
+        if (floatingView == null) return;
+        
         floatingView.setOnTouchListener(new View.OnTouchListener() {
             private int initialX;
             private int initialY;
@@ -172,7 +175,11 @@ public class FloatingLyricsService extends Service {
                     case MotionEvent.ACTION_MOVE:
                         params.x = initialX + (int) (event.getRawX() - initialTouchX);
                         params.y = initialY + (int) (event.getRawY() - initialTouchY);
-                        windowManager.updateViewLayout(floatingView, params);
+                        try {
+                            windowManager.updateViewLayout(floatingView, params);
+                        } catch (Exception e) {
+                            // View might have been removed
+                        }
                         return true;
                 }
                 return false;
@@ -186,112 +193,137 @@ public class FloatingLyricsService extends Service {
             SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
             String action = intent.getAction();
-
-            switch (action) {
-                case ACTION_UPDATE_TEXT:
-                    String text = intent.getStringExtra(EXTRA_TEXT);
-                    if (tvLyrics != null && text != null) tvLyrics.setText(text);
-                    break;
-                    
-                case ACTION_SHOW:
-                    setVisibility(true);
-                    break;
-                case ACTION_HIDE:
-                    setVisibility(false);
-                    break;
-                    
-                case ACTION_LOCK:
-                    setLocked(true);
-                    break;
-                case ACTION_UNLOCK:
-                    setLocked(false);
-                    break;
-                    
-                case ACTION_RESET_POS:
-                    params.x = 100;
-                    params.y = 100;
-                    windowManager.updateViewLayout(floatingView, params);
-                    savePosition();
-                    break;
-                    
-                case ACTION_MOVE_POS:
-                    int dx = intent.getIntExtra(EXTRA_DX, 0);
-                    int dy = intent.getIntExtra(EXTRA_DY, 0);
-                    params.x += dx;
-                    params.y += dy;
-                    windowManager.updateViewLayout(floatingView, params);
-                    savePosition();
-                    break;
-
-                // --- Visual Customizations ---
-                
-                case ACTION_UPDATE_SIZE:
-                    float size = intent.getFloatExtra(EXTRA_VALUE, 20f);
-                    currentTextSize = size;
-                    tvLyrics.setTextSize(size);
-                    editor.putFloat("text_size", size).apply();
-                    break;
-                    
-                case ACTION_UPDATE_ALPHA_TEXT:
-                    float tAlpha = intent.getFloatExtra(EXTRA_VALUE, 1.0f);
-                    currentTextAlpha = tAlpha;
-                    tvLyrics.setAlpha(tAlpha);
-                    editor.putFloat("text_alpha", tAlpha).apply();
-                    break;
-                    
-                case ACTION_UPDATE_ALPHA_BG:
-                    float bAlpha = intent.getFloatExtra(EXTRA_VALUE, 0.5f);
-                    currentBgAlpha = bAlpha;
-                    updateBackgroundAlpha();
-                    editor.putFloat("bg_alpha", bAlpha).apply();
-                    break;
-
-                case ACTION_UPDATE_PADDING:
-                    int pad = intent.getIntExtra(EXTRA_INT_VAL, 12);
-                    currentPadding = pad;
-                    updatePadding();
-                    editor.putInt("padding", pad).apply();
-                    break;
-
-                case ACTION_UPDATE_COLOR:
-                    int color = intent.getIntExtra(EXTRA_INT_VAL, Color.WHITE);
-                    currentTextColor = color;
-                    tvLyrics.setTextColor(color);
-                    editor.putInt("text_color", color).apply();
-                    break;
-                    
-                case ACTION_UPDATE_ALIGN:
-                    int align = intent.getIntExtra(EXTRA_INT_VAL, Gravity.CENTER);
-                    currentGravity = align;
-                    tvLyrics.setGravity(align);
-                    editor.putInt("gravity", align).apply();
-                    break;
-                    
-                case ACTION_UPDATE_FONT_FAMILY:
-                    String fam = intent.getStringExtra(EXTRA_STRING_VAL);
-                    if (fam != null) {
-                        currentFontFamily = fam;
-                        updateTypeface();
-                        editor.putString("font_family", fam).apply();
+            
+            // Ensure window is added if it was missing (e.g. permission granted later)
+            if (floatingView == null || floatingView.getWindowToken() == null) {
+                try {
+                    if (windowManager != null && floatingView != null) {
+                        // Check if already added to avoid "View already added" exception
+                        if (floatingView.getParent() == null) {
+                            windowManager.addView(floatingView, params);
+                        }
+                    } else {
+                        initializeWindow();
                     }
-                    break;
-                    
-                case ACTION_UPDATE_FONT_STYLE:
-                    isBold = intent.getBooleanExtra(EXTRA_BOOL_BOLD, false);
-                    isItalic = intent.getBooleanExtra(EXTRA_BOOL_ITALIC, false);
-                    updateTypeface();
-                    editor.putBoolean("is_bold", isBold).putBoolean("is_italic", isItalic).apply();
-                    break;
+                } catch (Exception e) {
+                   // Still can't add window
+                }
+            }
 
-                case ACTION_UPDATE_STYLE_PRESET:
-                    String styleName = intent.getStringExtra(EXTRA_STRING_VAL);
-                    applyPresetStyle(styleName);
-                    // Save the last preset used, but individual overrides are saved separately
-                    editor.putString("last_preset", styleName).apply();
-                    break;
+            try {
+                handleAction(action, intent, editor, prefs);
+            } catch (Exception e) {
+                Log.e("CarLyrics", "Error handling action: " + action, e);
             }
         }
         return START_STICKY;
+    }
+
+    private void handleAction(String action, Intent intent, SharedPreferences.Editor editor, SharedPreferences prefs) {
+        if (tvLyrics == null) return; // UI not ready
+
+        switch (action) {
+            case ACTION_UPDATE_TEXT:
+                String text = intent.getStringExtra(EXTRA_TEXT);
+                if (text != null) tvLyrics.setText(text);
+                break;
+                
+            case ACTION_SHOW:
+                setVisibility(true);
+                break;
+            case ACTION_HIDE:
+                setVisibility(false);
+                break;
+                
+            case ACTION_LOCK:
+                setLocked(true);
+                break;
+            case ACTION_UNLOCK:
+                setLocked(false);
+                break;
+                
+            case ACTION_RESET_POS:
+                params.x = 100;
+                params.y = 100;
+                windowManager.updateViewLayout(floatingView, params);
+                savePosition();
+                break;
+                
+            case ACTION_MOVE_POS:
+                int dx = intent.getIntExtra(EXTRA_DX, 0);
+                int dy = intent.getIntExtra(EXTRA_DY, 0);
+                params.x += dx;
+                params.y += dy;
+                windowManager.updateViewLayout(floatingView, params);
+                savePosition();
+                break;
+
+            // --- Visual Customizations ---
+            
+            case ACTION_UPDATE_SIZE:
+                float size = intent.getFloatExtra(EXTRA_VALUE, 20f);
+                currentTextSize = size;
+                tvLyrics.setTextSize(size);
+                editor.putFloat("text_size", size).apply();
+                break;
+                
+            case ACTION_UPDATE_ALPHA_TEXT:
+                float tAlpha = intent.getFloatExtra(EXTRA_VALUE, 1.0f);
+                currentTextAlpha = tAlpha;
+                tvLyrics.setAlpha(tAlpha);
+                editor.putFloat("text_alpha", tAlpha).apply();
+                break;
+                
+            case ACTION_UPDATE_ALPHA_BG:
+                float bAlpha = intent.getFloatExtra(EXTRA_VALUE, 0.5f);
+                currentBgAlpha = bAlpha;
+                updateBackgroundAlpha();
+                editor.putFloat("bg_alpha", bAlpha).apply();
+                break;
+
+            case ACTION_UPDATE_PADDING:
+                int pad = intent.getIntExtra(EXTRA_INT_VAL, 12);
+                currentPadding = pad;
+                updatePadding();
+                editor.putInt("padding", pad).apply();
+                break;
+
+            case ACTION_UPDATE_COLOR:
+                int color = intent.getIntExtra(EXTRA_INT_VAL, Color.WHITE);
+                currentTextColor = color;
+                tvLyrics.setTextColor(color);
+                editor.putInt("text_color", color).apply();
+                break;
+                
+            case ACTION_UPDATE_ALIGN:
+                int align = intent.getIntExtra(EXTRA_INT_VAL, Gravity.CENTER);
+                currentGravity = align;
+                tvLyrics.setGravity(align);
+                editor.putInt("gravity", align).apply();
+                break;
+                
+            case ACTION_UPDATE_FONT_FAMILY:
+                String fam = intent.getStringExtra(EXTRA_STRING_VAL);
+                if (fam != null) {
+                    currentFontFamily = fam;
+                    updateTypeface();
+                    editor.putString("font_family", fam).apply();
+                }
+                break;
+                
+            case ACTION_UPDATE_FONT_STYLE:
+                isBold = intent.getBooleanExtra(EXTRA_BOOL_BOLD, false);
+                isItalic = intent.getBooleanExtra(EXTRA_BOOL_ITALIC, false);
+                updateTypeface();
+                editor.putBoolean("is_bold", isBold).putBoolean("is_italic", isItalic).apply();
+                break;
+
+            case ACTION_UPDATE_STYLE_PRESET:
+                String styleName = intent.getStringExtra(EXTRA_STRING_VAL);
+                applyPresetStyle(styleName);
+                editor.putString("last_preset", styleName).apply();
+                break;
+        }
     }
 
     private void updateBackgroundAlpha() {
@@ -301,11 +333,13 @@ public class FloatingLyricsService extends Service {
     }
     
     private void updatePadding() {
+        if (rootLayout == null) return;
         int px = (int) (currentPadding * getResources().getDisplayMetrics().density);
         rootLayout.setPadding(px, px, px, px);
     }
 
     private void updateTypeface() {
+        if (tvLyrics == null) return;
         Typeface base = Typeface.DEFAULT;
         switch (currentFontFamily) {
             case "mono": base = Typeface.MONOSPACE; break;
@@ -323,7 +357,7 @@ public class FloatingLyricsService extends Service {
     }
 
     private void applyPresetStyle(String styleName) {
-        // Apply preset but don't save to prefs yet (user might tweak)
+        if (tvLyrics == null) return;
         tvLyrics.setShadowLayer(0, 0, 0, 0);
         
         switch (styleName) {
@@ -334,7 +368,6 @@ public class FloatingLyricsService extends Service {
             case "Minimal":
                 updateColor(Color.WHITE);
                 tvLyrics.setShadowLayer(8, 0, 0, Color.BLACK);
-                // Minimal implies 0 background usually, but we respect slider for consistency
                 break;
             case "Neon":
                 updateColor(Color.parseColor("#00FFFF"));
@@ -358,9 +391,9 @@ public class FloatingLyricsService extends Service {
     }
     
     private void updateColor(int color) {
+        if (tvLyrics == null) return;
         currentTextColor = color;
         tvLyrics.setTextColor(color);
-        // Persist immediately for consistency if preset is clicked
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().putInt("text_color", color).apply();
     }
 
@@ -373,19 +406,23 @@ public class FloatingLyricsService extends Service {
 
     private void setLocked(boolean locked) {
         this.isLocked = locked;
+        if (floatingView == null) return;
+        
         if (locked) {
             params.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | 
                            WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE |
                            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | 
                            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
-            ivDragHandle.setVisibility(View.GONE);
+            if (ivDragHandle != null) ivDragHandle.setVisibility(View.GONE);
         } else {
             params.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
                            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | 
                            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
-            ivDragHandle.setVisibility(View.VISIBLE);
+            if (ivDragHandle != null) ivDragHandle.setVisibility(View.VISIBLE);
         }
-        windowManager.updateViewLayout(floatingView, params);
+        try {
+            windowManager.updateViewLayout(floatingView, params);
+        } catch (Exception e) {}
     }
 
     private void savePosition() {
@@ -400,7 +437,9 @@ public class FloatingLyricsService extends Service {
         params.x = prefs.getInt("x", 100);
         params.y = prefs.getInt("y", 100);
         try {
-            windowManager.updateViewLayout(floatingView, params);
+            if (floatingView != null && floatingView.getParent() != null) {
+                windowManager.updateViewLayout(floatingView, params);
+            }
         } catch (Exception e) {}
         
         // Appearance
@@ -410,9 +449,11 @@ public class FloatingLyricsService extends Service {
         currentTextColor = prefs.getInt("text_color", Color.WHITE);
         currentPadding = prefs.getInt("padding", 12);
         
-        tvLyrics.setTextSize(currentTextSize);
-        tvLyrics.setAlpha(currentTextAlpha);
-        tvLyrics.setTextColor(currentTextColor);
+        if (tvLyrics != null) {
+            tvLyrics.setTextSize(currentTextSize);
+            tvLyrics.setAlpha(currentTextAlpha);
+            tvLyrics.setTextColor(currentTextColor);
+        }
         updateBackgroundAlpha();
         updatePadding();
         
@@ -422,7 +463,9 @@ public class FloatingLyricsService extends Service {
         isBold = prefs.getBoolean("is_bold", false);
         isItalic = prefs.getBoolean("is_italic", false);
         
-        tvLyrics.setGravity(currentGravity);
+        if (tvLyrics != null) {
+            tvLyrics.setGravity(currentGravity);
+        }
         updateTypeface();
     }
 
@@ -430,7 +473,11 @@ public class FloatingLyricsService extends Service {
     public void onDestroy() {
         super.onDestroy();
         if (floatingView != null && windowManager != null) {
-            windowManager.removeView(floatingView);
+            try {
+                windowManager.removeView(floatingView);
+            } catch (Exception e) {
+                // View might not be attached
+            }
         }
     }
 }

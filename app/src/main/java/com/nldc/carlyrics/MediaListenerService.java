@@ -9,9 +9,8 @@ import android.media.MediaMetadata;
 import android.media.session.MediaController;
 import android.media.session.MediaSessionManager;
 import android.media.session.PlaybackState;
-import android.os.Bundle;
+import android.os.Build;
 import android.service.notification.NotificationListenerService;
-import android.service.notification.StatusBarNotification;
 import android.util.Log;
 
 import java.util.List;
@@ -20,24 +19,43 @@ public class MediaListenerService extends NotificationListenerService {
 
     private MusicBroadcastReceiver musicReceiver;
     private MediaSessionManager mediaSessionManager;
+    private ComponentName componentName;
 
     @Override
     public void onCreate() {
         super.onCreate();
+        componentName = new ComponentName(this, MediaListenerService.class);
         registerMusicReceiver();
         mediaSessionManager = (MediaSessionManager) getSystemService(Context.MEDIA_SESSION_SERVICE);
-        mediaSessionManager.addOnActiveSessionsChangedListener(sessionsChangedListener, null);
-        updateFromActiveSessions();
+        
+        try {
+            // Fix: Must pass componentName to avoid SecurityException on some devices
+            mediaSessionManager.addOnActiveSessionsChangedListener(sessionsChangedListener, componentName);
+            updateFromActiveSessions();
+        } catch (SecurityException e) {
+            Log.e("CarLyrics", "Permission missing for MediaSession access", e);
+        } catch (Exception e) {
+            Log.e("CarLyrics", "Error setting up session listener", e);
+        }
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (musicReceiver != null) {
-            unregisterReceiver(musicReceiver);
+        try {
+            if (musicReceiver != null) {
+                unregisterReceiver(musicReceiver);
+            }
+        } catch (IllegalArgumentException e) {
+            // Receiver not registered
         }
+        
         if (mediaSessionManager != null) {
-            mediaSessionManager.removeOnActiveSessionsChangedListener(sessionsChangedListener);
+            try {
+                mediaSessionManager.removeOnActiveSessionsChangedListener(sessionsChangedListener);
+            } catch (Exception e) {
+                // Ignore
+            }
         }
     }
 
@@ -49,14 +67,18 @@ public class MediaListenerService extends NotificationListenerService {
         filter.addAction("com.android.music.metachanged");
         filter.addAction("com.android.music.playstatechanged");
         
-        // Kuwo Music Car (From Reference Manifest)
+        // Kuwo Music Car
         filter.addAction("cn.kuwo.kwmusiccar.action.PLAY_STATUS_CHANGED");
         filter.addAction("cn.kuwo.kwmusiccar.action.META_CHANGED");
         
         // Generic/Other
         filter.addAction("com.kugou.android.music.metachanged");
         
-        registerReceiver(musicReceiver, filter);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(musicReceiver, filter, Context.RECEIVER_EXPORTED);
+        } else {
+            registerReceiver(musicReceiver, filter);
+        }
     }
 
     private class MusicBroadcastReceiver extends BroadcastReceiver {
@@ -104,10 +126,15 @@ public class MediaListenerService extends NotificationListenerService {
 
     private void updateFromActiveSessions() {
         try {
-            List<MediaController> controllers = mediaSessionManager.getActiveSessions(new ComponentName(this, MediaListenerService.class));
-            registerCallbacks(controllers);
+            if (mediaSessionManager != null) {
+                List<MediaController> controllers = mediaSessionManager.getActiveSessions(componentName);
+                registerCallbacks(controllers);
+            }
         } catch (SecurityException e) {
             // Permission not granted yet
+            Log.e("CarLyrics", "SecurityException retrieving active sessions", e);
+        } catch (Exception e) {
+            Log.e("CarLyrics", "Error retrieving active sessions", e);
         }
     }
 
@@ -139,6 +166,16 @@ public class MediaListenerService extends NotificationListenerService {
         Intent intent = new Intent(this, FloatingLyricsService.class);
         intent.setAction(FloatingLyricsService.ACTION_UPDATE_TEXT);
         intent.putExtra(FloatingLyricsService.EXTRA_TEXT, text);
-        startService(intent);
+        
+        try {
+            // Fix: Use startForegroundService for Android O+ to avoid IllegalStateException in background
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent);
+            } else {
+                startService(intent);
+            }
+        } catch (Exception e) {
+            Log.e("CarLyrics", "Failed to start overlay service", e);
+        }
     }
 }
