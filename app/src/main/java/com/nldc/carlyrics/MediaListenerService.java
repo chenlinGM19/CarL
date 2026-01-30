@@ -29,9 +29,10 @@ public class MediaListenerService extends NotificationListenerService {
         mediaSessionManager = (MediaSessionManager) getSystemService(Context.MEDIA_SESSION_SERVICE);
         
         try {
-            // Fix: Must pass componentName to avoid SecurityException on some devices
-            mediaSessionManager.addOnActiveSessionsChangedListener(sessionsChangedListener, componentName);
-            updateFromActiveSessions();
+            if (mediaSessionManager != null) {
+                mediaSessionManager.addOnActiveSessionsChangedListener(sessionsChangedListener, componentName);
+                updateFromActiveSessions();
+            }
         } catch (SecurityException e) {
             Log.e("CarLyrics", "Permission missing for MediaSession access", e);
         } catch (Exception e) {
@@ -59,20 +60,13 @@ public class MediaListenerService extends NotificationListenerService {
         }
     }
 
-    // --- Broadcast Receiver for Car Units (Kuwo, System) ---
     private void registerMusicReceiver() {
         musicReceiver = new MusicBroadcastReceiver();
         IntentFilter filter = new IntentFilter();
-        // Standard Android Music
         filter.addAction("com.android.music.metachanged");
         filter.addAction("com.android.music.playstatechanged");
-        
-        // Kuwo Music Car
         filter.addAction("cn.kuwo.kwmusiccar.action.PLAY_STATUS_CHANGED");
         filter.addAction("cn.kuwo.kwmusiccar.action.META_CHANGED");
-        
-        // Generic/Other
-        filter.addAction("com.kugou.android.music.metachanged");
         
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(musicReceiver, filter, Context.RECEIVER_EXPORTED);
@@ -89,7 +83,6 @@ public class MediaListenerService extends NotificationListenerService {
 
             if (action != null) {
                 if (action.contains("cn.kuwo")) {
-                    // Kuwo specific extras
                     String lyric = intent.getStringExtra("valid_lyric");
                     if (lyric != null && !lyric.isEmpty()) {
                         textToDisplay = lyric;
@@ -99,7 +92,6 @@ public class MediaListenerService extends NotificationListenerService {
                         if (song != null) textToDisplay = song + (artist != null ? " - " + artist : "");
                     }
                 } else {
-                    // Standard Android
                     String artist = intent.getStringExtra("artist");
                     String track = intent.getStringExtra("track");
                     if (track != null) {
@@ -113,8 +105,6 @@ public class MediaListenerService extends NotificationListenerService {
             }
         }
     }
-
-    // --- Notification / MediaSession Listener ---
 
     private final MediaSessionManager.OnActiveSessionsChangedListener sessionsChangedListener = 
         new MediaSessionManager.OnActiveSessionsChangedListener() {
@@ -130,9 +120,6 @@ public class MediaListenerService extends NotificationListenerService {
                 List<MediaController> controllers = mediaSessionManager.getActiveSessions(componentName);
                 registerCallbacks(controllers);
             }
-        } catch (SecurityException e) {
-            // Permission not granted yet
-            Log.e("CarLyrics", "SecurityException retrieving active sessions", e);
         } catch (Exception e) {
             Log.e("CarLyrics", "Error retrieving active sessions", e);
         }
@@ -153,11 +140,6 @@ public class MediaListenerService extends NotificationListenerService {
                         sendTextToOverlay(text);
                     }
                 }
-
-                @Override
-                public void onPlaybackStateChanged(PlaybackState state) {
-                    super.onPlaybackStateChanged(state);
-                }
             });
         }
     }
@@ -168,7 +150,6 @@ public class MediaListenerService extends NotificationListenerService {
         intent.putExtra(FloatingLyricsService.EXTRA_TEXT, text);
         
         try {
-            // Fix: Use startForegroundService for Android O+ to avoid IllegalStateException in background
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 startForegroundService(intent);
             } else {
