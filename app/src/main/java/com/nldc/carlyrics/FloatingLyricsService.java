@@ -34,6 +34,7 @@ public class FloatingLyricsService extends Service {
     private View floatingView;
     private TextView tvLyrics;
     private WindowManager.LayoutParams params;
+    private boolean isViewAttached = false;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -44,7 +45,8 @@ public class FloatingLyricsService extends Service {
     public void onCreate() {
         super.onCreate();
         startForegroundServiceNotification();
-        initializeWindow();
+        initializeLayout();
+        attachView();
     }
 
     private void startForegroundServiceNotification() {
@@ -72,12 +74,18 @@ public class FloatingLyricsService extends Service {
         }
     }
 
-    private void initializeWindow() {
-        windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
-        try {
+    private void initializeLayout() {
+        if (windowManager == null) {
+            windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+        }
+        
+        if (floatingView == null) {
             floatingView = LayoutInflater.from(this).inflate(R.layout.window_floating_lyrics, null);
             tvLyrics = floatingView.findViewById(R.id.tvLyrics);
+            setupTouchListener();
+        }
 
+        if (params == null) {
             int layoutFlag;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 layoutFlag = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
@@ -96,21 +104,22 @@ public class FloatingLyricsService extends Service {
 
             params.gravity = Gravity.TOP | Gravity.START;
             
-            // Load position
             SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
             params.x = prefs.getInt("x", 100);
             params.y = prefs.getInt("y", 100);
+        }
+    }
 
-            try {
-                windowManager.addView(floatingView, params);
-            } catch (Exception e) {
-                Log.e("CarLyrics", "Error adding view to window manager", e);
-            }
-            
-            setupTouchListener();
-            
+    private void attachView() {
+        if (floatingView == null || windowManager == null) return;
+        if (isViewAttached) return;
+
+        try {
+            windowManager.addView(floatingView, params);
+            isViewAttached = true;
         } catch (Exception e) {
-            Log.e("CarLyrics", "Failed to initialize window layout", e);
+            Log.e("CarLyrics", "Error adding view to window manager (permission might be missing)", e);
+            isViewAttached = false;
         }
     }
 
@@ -133,7 +142,6 @@ public class FloatingLyricsService extends Service {
                         initialTouchY = event.getRawY();
                         return true;
                     case MotionEvent.ACTION_UP:
-                        // Save position
                         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
                         prefs.edit().putInt("x", params.x).putInt("y", params.y).apply();
                         return true;
@@ -143,7 +151,7 @@ public class FloatingLyricsService extends Service {
                         try {
                             windowManager.updateViewLayout(floatingView, params);
                         } catch (Exception e) {
-                            // View might have been removed
+                            Log.e("CarLyrics", "Error updating view layout", e);
                         }
                         return true;
                 }
@@ -157,8 +165,10 @@ public class FloatingLyricsService extends Service {
         if (intent != null && intent.getAction() != null) {
             String action = intent.getAction();
             
-            if (floatingView == null) {
-                initializeWindow();
+            // Try to attach view again in case permission was just granted
+            if (!isViewAttached) {
+                initializeLayout();
+                attachView();
             }
 
             if (ACTION_UPDATE_TEXT.equals(action)) {
@@ -178,11 +188,12 @@ public class FloatingLyricsService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (floatingView != null && windowManager != null) {
+        if (floatingView != null && windowManager != null && isViewAttached) {
             try {
                 windowManager.removeView(floatingView);
+                isViewAttached = false;
             } catch (Exception e) {
-                // View might not be attached
+                Log.e("CarLyrics", "Error removing view", e);
             }
         }
     }

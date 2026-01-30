@@ -13,6 +13,7 @@ import android.os.Build;
 import android.service.notification.NotificationListenerService;
 import android.util.Log;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MediaListenerService extends NotificationListenerService {
@@ -20,6 +21,9 @@ public class MediaListenerService extends NotificationListenerService {
     private MusicBroadcastReceiver musicReceiver;
     private MediaSessionManager mediaSessionManager;
     private ComponentName componentName;
+    
+    // Keep references to active controllers to prevent GC and handle unregistration
+    private final List<MediaController> currentControllers = new ArrayList<>();
 
     @Override
     public void onCreate() {
@@ -58,6 +62,17 @@ public class MediaListenerService extends NotificationListenerService {
                 // Ignore
             }
         }
+        
+        unregisterCurrentControllers();
+    }
+
+    private void unregisterCurrentControllers() {
+        for (MediaController controller : currentControllers) {
+            if (controller != null) {
+                controller.unregisterCallback(mediaControllerCallback);
+            }
+        }
+        currentControllers.clear();
     }
 
     private void registerMusicReceiver() {
@@ -110,7 +125,7 @@ public class MediaListenerService extends NotificationListenerService {
         new MediaSessionManager.OnActiveSessionsChangedListener() {
         @Override
         public void onActiveSessionsChanged(List<MediaController> controllers) {
-            registerCallbacks(controllers);
+            updateControllers(controllers);
         }
     };
 
@@ -118,29 +133,52 @@ public class MediaListenerService extends NotificationListenerService {
         try {
             if (mediaSessionManager != null) {
                 List<MediaController> controllers = mediaSessionManager.getActiveSessions(componentName);
-                registerCallbacks(controllers);
+                updateControllers(controllers);
             }
         } catch (Exception e) {
             Log.e("CarLyrics", "Error retrieving active sessions", e);
         }
     }
 
-    private void registerCallbacks(List<MediaController> controllers) {
-        if (controllers == null) return;
-        for (MediaController controller : controllers) {
-            controller.registerCallback(new MediaController.Callback() {
-                @Override
-                public void onMetadataChanged(MediaMetadata metadata) {
-                    if (metadata == null) return;
-                    String title = metadata.getString(MediaMetadata.METADATA_KEY_TITLE);
-                    String artist = metadata.getString(MediaMetadata.METADATA_KEY_ARTIST);
-                    
-                    if (title != null) {
-                        String text = title + (artist != null ? "\n" + artist : "");
-                        sendTextToOverlay(text);
-                    }
+    private void updateControllers(List<MediaController> newControllers) {
+        if (newControllers == null) return;
+        
+        unregisterCurrentControllers();
+        
+        for (MediaController controller : newControllers) {
+            if (controller != null) {
+                controller.registerCallback(mediaControllerCallback);
+                currentControllers.add(controller);
+                
+                // Check initial state
+                MediaMetadata metadata = controller.getMetadata();
+                if (metadata != null) {
+                    extractAndSendMetadata(metadata);
                 }
-            });
+            }
+        }
+    }
+    
+    private final MediaController.Callback mediaControllerCallback = new MediaController.Callback() {
+        @Override
+        public void onMetadataChanged(MediaMetadata metadata) {
+            extractAndSendMetadata(metadata);
+        }
+        
+        @Override
+        public void onPlaybackStateChanged(PlaybackState state) {
+            // Optional: Handle play/pause state
+        }
+    };
+
+    private void extractAndSendMetadata(MediaMetadata metadata) {
+        if (metadata == null) return;
+        String title = metadata.getString(MediaMetadata.METADATA_KEY_TITLE);
+        String artist = metadata.getString(MediaMetadata.METADATA_KEY_ARTIST);
+        
+        if (title != null) {
+            String text = title + (artist != null ? "\n" + artist : "");
+            sendTextToOverlay(text);
         }
     }
 
