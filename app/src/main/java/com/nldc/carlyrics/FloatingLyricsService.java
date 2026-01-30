@@ -1,5 +1,8 @@
 package com.nldc.carlyrics;
 
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -50,6 +53,7 @@ public class FloatingLyricsService extends Service {
     public static final String EXTRA_DY = "extra_dy";
 
     private static final String PREFS_NAME = "OverlayPrefs";
+    private static final String NOTIFICATION_CHANNEL_ID = "lyrics_overlay_service";
 
     private WindowManager windowManager;
     private View floatingView;
@@ -82,8 +86,31 @@ public class FloatingLyricsService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        startForegroundServiceNotification();
         initializeWindow();
         loadState();
+    }
+
+    private void startForegroundServiceNotification() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    NOTIFICATION_CHANNEL_ID,
+                    "Lyrics Overlay",
+                    NotificationManager.IMPORTANCE_LOW
+            );
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager != null) {
+                manager.createNotificationChannel(channel);
+            }
+
+            Notification notification = new Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
+                    .setContentTitle("Car Lyrics Overlay")
+                    .setContentText("Service is running")
+                    .setSmallIcon(R.drawable.ic_app_icon)
+                    .build();
+
+            startForeground(1, notification);
+        }
     }
 
     private void initializeWindow() {
@@ -113,7 +140,12 @@ public class FloatingLyricsService extends Service {
         params.x = 100;
         params.y = 100;
 
-        windowManager.addView(floatingView, params);
+        try {
+            windowManager.addView(floatingView, params);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
         setupTouchListener();
     }
 
@@ -334,7 +366,9 @@ public class FloatingLyricsService extends Service {
 
     private void setVisibility(boolean visible) {
         this.isVisible = visible;
-        floatingView.setVisibility(visible ? View.VISIBLE : View.GONE);
+        if (floatingView != null) {
+            floatingView.setVisibility(visible ? View.VISIBLE : View.GONE);
+        }
     }
 
     private void setLocked(boolean locked) {
@@ -365,7 +399,9 @@ public class FloatingLyricsService extends Service {
         // Position
         params.x = prefs.getInt("x", 100);
         params.y = prefs.getInt("y", 100);
-        windowManager.updateViewLayout(floatingView, params);
+        try {
+            windowManager.updateViewLayout(floatingView, params);
+        } catch (Exception e) {}
         
         // Appearance
         currentTextSize = prefs.getFloat("text_size", 20f);
